@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Code Reviewer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: sans-serif; background: #0f0f0f; color: #fff; padding: 30px; }
+        h1 { color: #7c6ff7; margin-bottom: 24px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        select, textarea, button { width: 100%; padding: 12px; margin-bottom: 16px; border-radius: 8px; border: 1px solid #333; background: #1a1a1a; color: #fff; font-size: 14px; }
+        textarea { height: 200px; font-family: monospace; resize: vertical; }
+        button { background: #7c6ff7; border: none; cursor: pointer; font-size: 16px; font-weight: bold; }
+        button:hover { background: #6458d4; }
+        .result { background: #1a1a1a; border-radius: 8px; padding: 20px; margin-top: 16px; display: none; }
+        .score { font-size: 48px; font-weight: bold; color: #7c6ff7; text-align: center; margin-bottom: 16px; }
+        .section { margin-bottom: 16px; }
+        .section h3 { color: #7c6ff7; margin-bottom: 8px; }
+        .bug { background: #2a1a1a; padding: 8px 12px; border-left: 3px solid #e24b4a; border-radius: 4px; margin-bottom: 8px; }
+        .improvement { background: #1a2a1a; padding: 8px 12px; border-left: 3px solid #1D9E75; border-radius: 4px; margin-bottom: 8px; }
+        pre { background: #111; padding: 16px; border-radius: 8px; overflow-x: auto; font-size: 13px; }
+        .loading { text-align: center; color: #7c6ff7; display: none; margin: 16px 0; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🔍 AI Code Reviewer</h1>
+
+    <select id="language">
+        <option value="Python">Python</option>
+        <option value="JavaScript">JavaScript</option>
+        <option value="Java">Java</option>
+    </select>
+
+    <textarea id="code" placeholder="Paste your code here..."></textarea>
+
+    <button onclick="reviewCode()">Review My Code</button>
+
+    <div class="loading" id="loading">⏳ Reviewing your code...</div>
+
+    <div class="result" id="result">
+        <div class="score" id="score"></div>
+
+        <div class="section">
+            <h3>Summary</h3>
+            <p id="summary"></p>
+        </div>
+
+        <div class="section">
+            <h3>🐛 Bugs Found</h3>
+            <div id="bugs"></div>
+        </div>
+
+        <div class="section">
+            <h3>💡 Improvements</h3>
+            <div id="improvements"></div>
+        </div>
+
+        <div class="section">
+            <h3>✅ Fixed Code</h3>
+            <pre id="fixed"></pre>
+        </div>
+    </div>
+</div>
+
+<script>
+async function reviewCode() {
+    const code = document.getElementById('code').value;
+    const language = document.getElementById('language').value;
+
+    if (!code.trim()) {
+        alert('Please paste some code first!');
+        return;
+    }
+
+    // Show loading
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('result').style.display = 'none';
+
+    try {
+        const response = await fetch('http://localhost:8000/review', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ code, language })
+        });
+
+        const data = await response.json();
+
+        // Show score
+        document.getElementById('score').textContent = 
+            `${data.score}/10`;
+
+        // Show summary
+        document.getElementById('summary').textContent = data.summary;
+
+        // Show bugs
+        const bugsDiv = document.getElementById('bugs');
+        bugsDiv.innerHTML = data.bugs.length === 0 
+            ? '<p>No bugs found! 🎉</p>'
+            : data.bugs.map(b => `<div class="bug">${b}</div>`).join('');
+
+        // Show improvements
+        document.getElementById('improvements').innerHTML = 
+            data.improvements.map(i => 
+                `<div class="improvement">${i}</div>`
+            ).join('');
+
+        // Show fixed code
+        document.getElementById('fixed').textContent = data.fixed_code;
+
+        // Show results
+        document.getElementById('result').style.display = 'block';
+
+    } catch (error) {
+        alert('Error: ' + error.message);
+    } finally {
+        document.getElementById('loading').style.display = 'none';
+    }
+}
+</script>
+</body>
+</html>
